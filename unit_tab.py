@@ -107,7 +107,9 @@ class UnitTab(wx.ScrolledWindow):
         self.tab['clvl'] = level
         self.tab['domain'] = domain
         self.tab['gear'] = ""
+        self.tab['max'] = 0
         self.tab['name'] = name
+        self.tab['prop'] = 0
         self.tab['loads'] = []
         self.ptr['children'] = []
 
@@ -296,42 +298,68 @@ class UnitTab(wx.ScrolledWindow):
         row = 0
         # Do Base/Inherited, Class, then Gear
 
+ #### Do Base, Prior, Class, then Gear
+        # Get Prior Items
+        loop = self.getPriorTraits()
 
-
-        for type in ['Prior', 'Class', 'Gear']:
-            label = wx.StaticText(self, label="{} Traits".format(type), style=self.flags)
+        # Print title if showing faction traits
+        if not OptList['HideBase'] == 1 and len(loop) > 0:
+            label = wx.StaticText(self, label="Faction Traits", style=self.flags)
             label.SetFont(self.boldfont)
             traitGrid.Add(label, pos=(row, 0), span=(1, 2), flag=self.flags, border=self.border)
             row += 1
-            if type == "Prior": loop = self.getPriorTraits()
-            if type == "Class": loop = self.tab['ctraits']
-            if type == "Gear": loop = self.gear
-            if len(loop) < 1: loop = ["None"]
-            for item in loop:
-                # selected traits affect PV and stats
-                if '|' in item and not item.startswith('|'):
-                    self.doTraitMods(item, type)
-                # Put a select button or static text as needed for each item
 
-                if type == "Prior" and self.tab['clvl'] > 0 and item in self.ptr['parent'][1].tab['ctraits']:
-                    # Continue/skip display if option set to hide base traits
-                    if (OptList["HideBase"] == 1):
-                        continue
-                    else:
-                        widget = self.showTrait(type, item)
-                        widget.SetFont(self.italfont)
-                else:
-                    widget = self.showTrait(type, item)
+        inherit = []
+        for item in loop:
+            print("item: {}".format(item))
+            if '|' in item and not item.startswith('|'):
+                self.doTraitMods(item, "Prior")
+
+            if self.tab['clvl'] == 0 or item in self.ptr['parent'][1].tab['ctraits'] and OptList['HideBase'] == 0:
+                widget = self.showTrait("Prior", item)
+                widget.SetFont(self.italfont)
                 traitGrid.Add(widget, pos=(row, 1), flag=self.flags, border=self.border)
-                if type == "Class" and item.startswith('|'):
-                    self.Bind(wx.EVT_BUTTON, lambda event, t=item: self.onSelTrait(event, t), widget)
-                elif type == "Class":
-                    if "|Trait|" in item or '|Pick|' in item:
-                        delbtn = wx.Button(self, -1, "x", size=(36, -1))
-                        self.Bind(wx.EVT_BUTTON, lambda event, t=item: self.onDelTrait(event, t), delbtn)
-                        traitGrid.Add(delbtn, pos=(row, 0), flag=self.flags, border=self.border)
                 row += 1
+            else:
+                inherit.append(item)
+            print("Showing {} Loop {}".format(item, inherit))
+
+        # Start Class Traits
+        label = wx.StaticText(self, label="Class {} Traits (Max Traits: {})".format(self.tab['clvl'], self.tab['max']), style=self.flags)
+        label.SetFont(self.boldfont)
+        traitGrid.Add(label, pos=(row, 0), span=(1, 2), flag=self.flags, border=self.border)
+        row += 1
+        # Do remaining inherited traits
+        for item in inherit:
+            widget = self.showTrait("Prior", item)
+            widget.SetFont(self.italfont)
+            traitGrid.Add(widget, pos=(row, 1), flag=self.flags, border=self.border)
             row += 1
+        # Do traits for this class
+        for item in self.tab['ctraits']:
+            self.doTraitMods(item, "Class")
+            widget = self.showTrait("Class", item)
+            traitGrid.Add(widget, pos=(row, 1), flag=self.flags, border=self.border)
+            if item.startswith('|'):
+                self.Bind(wx.EVT_BUTTON, lambda event, t=item: self.onSelTrait(event, t), widget)
+            elif type == "Class":
+                if "|Trait|" in item or '|Pick|' in item:
+                    delbtn = wx.Button(self, -1, "x", size=(36, -1))
+                    self.Bind(wx.EVT_BUTTON, lambda event, t=item: self.onDelTrait(event, t), delbtn)
+                    traitGrid.Add(delbtn, pos=(row, 0), flag=self.flags, border=self.border)
+            row += 1
+
+        # Start Gear Traits
+        label = wx.StaticText(self, label="Gear Options (Max Properties: {})".format(self.tab['prop']), style=self.flags)
+        label.SetFont(self.boldfont)
+        traitGrid.Add(label, pos=(row, 0), span=(1, 2), flag=self.flags, border=self.border)
+        row += 1
+        self.gear.sort()
+        for item in self.gear:
+            widget = self.showTrait("Gear", item)
+            traitGrid.Add(widget, pos=(row, 1), flag=self.flags, border=self.border)
+            row += 1
+
         traitGrid.AddGrowableCol(1)
         return(traitGrid)
 
