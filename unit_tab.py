@@ -76,10 +76,11 @@ AdvGear = readfile('opt_gear.cvs')  # dict for gear added via traits
 OptList = {}
 OptList["HideBase"] = 0
 
-class UnitTab(wx.Panel):
+class UnitTab(wx.ScrolledWindow):
     #########################################
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
+        wx.ScrolledWindow.__init__(self, parent)
+        self.SetScrollbars(20, 20, 50, 50)
 
         #self.boldfont = wx.Font(-1, -1, -1, wx.BOLD)
         self.boldfont = wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD)

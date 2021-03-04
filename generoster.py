@@ -9,10 +9,11 @@ import xlsxwriter
 class GeneRoster(wx.Frame):
     def __init__(self):
         # Init window
-        wx.Frame.__init__(self, None, -1, "GeneRoster", size=(1000, 900))
+        wx.Frame.__init__(self, None, -1, "GeneRoster", size=(1200, 1000))
 
         # Create panel
         p = wx.Panel(self)
+
 
         self.nb = LB.LabelBook(p, -1, size=(400, 200), style=wx.NB_LEFT,
             agwStyle=INB_LEFT|INB_FIT_LABELTEXT|INB_FIT_BUTTON|INB_SHOW_ONLY_TEXT|INB_USE_PIN_BUTTON)

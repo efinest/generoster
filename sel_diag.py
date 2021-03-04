@@ -2,8 +2,10 @@ import wx
 
 class selGearDiag(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent=parent, title="Gear Selection", size=(720, 800), style=wx.DEFAULT_FRAME_STYLE)
-        self.panel = wx.Panel(self)
+        wx.Dialog.__init__(self, parent=parent, title="Gear Selection", size=(800, 800), style=wx.DEFAULT_FRAME_STYLE)
+        #self.panel = wx.Panel(self)
+        self.p = wx.ScrolledWindow(self)
+        self.p.SetScrollbars(20, 20, 50, 50)
 
     def CreateGearList(self, clvl, prior_gear, list):
         sizer = wx.BoxSizer()
@@ -11,7 +13,7 @@ class selGearDiag(wx.Dialog):
         self.gear = prior_gear
 
         # print header
-        okBtn = wx.Button(self, -1, "Click to Finish Selecting Gear")
+        okBtn = wx.Button(self.p, -1, "Click to Finish Selecting Gear")
         okBtn.SetBackgroundColour((100, 100, 100))
         okBtn.SetForegroundColour((255, 255, 255))
         self.Bind(wx.EVT_BUTTON, self.onOK, okBtn)
@@ -19,7 +21,7 @@ class selGearDiag(wx.Dialog):
         fields = ["Pick Amount", "Unit", "Name", "Notes", "Cost"]
         col = 0
         for field in fields:
-            label = wx.StaticText(self, label=field, style=wx.ALIGN_CENTER)
+            label = wx.StaticText(self.p, label=field, style=wx.ALIGN_CENTER)
             label.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD))
             gearGrid.Add(label, pos=(1, col), flag=wx.ALIGN_CENTER)
             col += 1
@@ -34,7 +36,7 @@ class selGearDiag(wx.Dialog):
             # Select a specific #
             col = 0
             if not list[key]['Category']  == "Primitive":
-                selWid = wx.SpinCtrl(self, -1, "0", min=0, max=100, size=(-1, -1))
+                selWid = wx.SpinCtrl(self.p, -1, "0", min=0, max=100, size=(-1, -1))
                 if key in prior_gear.keys() and prior_gear[key] < 100:  selWid.SetValue(prior_gear[key])
                 self.Bind(wx.EVT_SPINCTRL, lambda event, k=key: self.onCheck(event, k), selWid)
                 if not (row % 2):
@@ -44,7 +46,7 @@ class selGearDiag(wx.Dialog):
 
             # Select for entire unit
             col += 1
-            selWid = wx.CheckBox(self, -1, "", size=(-1,-1))
+            selWid = wx.CheckBox(self.p, -1, "", size=(-1,-1))
             if key in prior_gear.keys(): selWid.SetValue(True)
             self.Bind(wx.EVT_CHECKBOX, lambda event, k=key: self.onCheck(event, k), selWid)
             if not (row % 2):
@@ -54,7 +56,7 @@ class selGearDiag(wx.Dialog):
 
             # Name
             col += 1
-            label = wx.StaticText(self, label=key)
+            label = wx.StaticText(self.p, label=key)
             if not (row % 2):
                label.SetBackgroundColour((100, 100, 100))
                label.SetForegroundColour((255, 255, 255))
@@ -62,7 +64,7 @@ class selGearDiag(wx.Dialog):
 
             # Notes
             col += 1
-            label = wx.StaticText(self, label=list[key]['Notes'])
+            label = wx.StaticText(self.p, label=list[key]['Notes'])
             if not (row % 2):
                 label.SetBackgroundColour((100, 100, 100))
                 label.SetForegroundColour((255, 255, 255))
@@ -70,7 +72,7 @@ class selGearDiag(wx.Dialog):
 
             # Cost
             col += 1
-            label = wx.StaticText(self, label=list[key]['Cost'], style=wx.ALIGN_CENTER)
+            label = wx.StaticText(self.p, label=list[key]['Cost'], style=wx.ALIGN_CENTER)
             if not (row % 2):
                 label.SetBackgroundColour((100, 100, 100))
                 label.SetForegroundColour((255, 255, 255))
@@ -79,7 +81,7 @@ class selGearDiag(wx.Dialog):
             row += 1
         gearGrid.AddGrowableCol(3)
         sizer.Add(gearGrid, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=10)
-        self.panel.SetSizer(sizer)  # Add to panel
+        self.p.SetSizer(sizer)  # Add to panel
 
     def onCheck(self, event, k):
         print("Picked {} {}".format(k,event.GetEventObject().GetValue()))
