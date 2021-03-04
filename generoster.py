@@ -54,16 +54,22 @@ class GeneRoster(wx.Frame):
         # Add everything to the sizers to show
         p.Layout()
 
+        # Initial data load
+        self.DomainList = self.readfile('main.csv')  # dict for domain construction info
+        self.TraitList = self.readfile('traits.csv')  # dict for traits
+        self.GearList = self.readfile('gear.csv')  # dict for gear
+        self.AdvGear = self.readfile('opt_gear.cvs')  # dict for gear added via traits
+        self.OptList = {}
+        self.OptList["HideBase"] = 0
+
     #########################################
     def onNew(self, event):
         # Delete existing tabs/info
         while self.nb.GetPageCount() > 1:
             self.nb.DeletePage(1)
             self.nb.SendSizeEvent()
-        self.base.tab['domain'] = ""
-        self.base.tab['name'] = "New Faction"
+        self.base.init("", "", 0, "New Faction")
         self.nb.SetPageText(0, "L0: {}".format(self.base.tab['name']))
-        self.base.ptr['children'] = []
         self.base.DrawTab()
 
     #########################################
@@ -148,8 +154,10 @@ class GeneRoster(wx.Frame):
         worksheet = workbook.add_worksheet("Loadouts")
         h1 = workbook.add_format()
         h1.set_font_size(10)
+        h1.set_font_color("white")
+        h1.set_bg_color("#808080")
         h1.set_bold()
-        h1.set_underline()
+        #h1.set_underline()
         h1.set_align("center")
         h1.set_border(1)
 
@@ -165,7 +173,7 @@ class GeneRoster(wx.Frame):
         t2.set_align("vcenter")
         t2.set_border(1)
 
-        header = ["Qty", "Name", "Description", "Cost", "Total"]
+        header = ["Qty", "Name", "Description", "Cost", "Total", "", "", "", "", "", ""]
         row = 0
         col = 0
         for name in header:
@@ -173,13 +181,24 @@ class GeneRoster(wx.Frame):
             col += 1
         row += 1
 
+        width = [3, 14, 30, 4, 4, 8, 3, 8, 3, 8, 3]
         for t in self.tabArray:
-            print("T {}".format(t.tab))
             for unit in t.tab['loads']:
                 (name, qty, gear, gcost, cost) = unit.split('|')
                 # Needs level and traits
+                traits = []
+                for data in (t.getPriorTraits()) + t.tab['ctraits']:
+                    (trait_name, trait_effect) = t.getTraitEffect(data)
+                    if "Increase " in trait_name or "Decrease " in trait_name:
+                        continue
+                    if "Increase " in trait_effect or "Decrease " in trait_effect:
+                        continue
+                    if "Armory: " in trait_name or "Armory: " in trait_effect:
+                        continue
+                    traits.append(trait_name)
+                if len(traits) < 1: traits = ["None"]
                 # sarge upgrade option
-                desc = "Models: {}; Gear: {}".format(qty, gear)
+                desc = "Level: {}; Traits: {}; Models: {}; Gear: {}".format(t.tab['clvl'], ", ".join(traits), qty, gear)
                 worksheet.write(row, 0, 0, t2)        # qty of this taken
                 worksheet.write(row, 1, name, h1)     # name + ???
                 worksheet.merge_range(row+1, 1, row+4, 1, "", t1)
@@ -195,12 +214,13 @@ class GeneRoster(wx.Frame):
                     if (col > 9):
                         col = 5
                         row += 1
+                for x in range(len(width)): worksheet.write(row, x, "", h1) # Write a colored line between units
                 row += 1
 
         worksheet.merge_range(row, 0, row, 3, "Army Total", h1)
         worksheet.write_formula(row, 4, "=sum(E2:E{})".format(row-1), h1)
 
-        width = [ 3, 14, 40, 4, 4, 8, 3, 8, 3, 8, 3]
+
         for count in range(len(width)):
             worksheet.set_column(count,count, width[count])
 
@@ -219,6 +239,27 @@ class GeneRoster(wx.Frame):
         for child in roster.ptr['children']:
             roster.tab['kids'].append(len(self.tabArray))
             self.listTabs(child)
+
+    #########################################
+    def readfile(self, filename):
+        info = {}
+        with open('data/' + filename, 'r', encoding="utf8") as fp:
+            # Top line provides field list for hashing
+            line = fp.readline()
+            line.strip()
+            field_list = line.split(",")
+
+            line = fp.readline()
+            while line:
+                line.strip()
+                data = line.split(",")
+                if (data[0]):  # Make sure there is data in the line
+                    info[data[0]] = {}
+                    for index in range(0, len(data)):
+                        info[data[0]][field_list[index]] = data[index]
+                line = fp.readline()
+        fp.close()
+        return (info)
 
 
 

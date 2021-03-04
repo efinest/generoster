@@ -20,17 +20,16 @@ select trait cancel error
 Dependent traits
 - delete with parent
 
-Rare Trait Filter
-Armory Filter
+Trait Filter
+Rare Filter (only applicable traits)
 
 Hybrid
 Forbidden Lore
+Exotic Biest
 
 Monsters / Biest Monster
 
 Add Powers
-Add Loadouts (gear options for unit)
-Add Roster
 
 Name Change -> redraw all  # Needs to change trigger to on focus change for redraw
 
@@ -44,7 +43,7 @@ Limit which classes can build from which classes
 
 Auto select lists with only one option
 
-Pick display (default to Pick Attribute, other hide Pick
+Pick display (default to Pick Attribute, other hide Pick)
 
 '''
 
@@ -68,6 +67,7 @@ def readfile(filename):
     fp.close()
     return(info)
 
+# Move to main, create a set and propagate subroutine
 #Initial data load
 Domain = readfile('main.csv')       # dict for domain construction info
 TraitList = readfile('traits.csv')  # dict for traits
@@ -82,7 +82,6 @@ class UnitTab(wx.ScrolledWindow):
         wx.ScrolledWindow.__init__(self, parent)
         self.SetScrollbars(20, 20, 50, 50)
 
-        #self.boldfont = wx.Font(-1, -1, -1, wx.BOLD)
         self.boldfont = wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD)
         self.italfont = wx.Font(-1, wx.DEFAULT, wx.ITALIC, wx.NORMAL)
         self.border = 0
@@ -93,6 +92,8 @@ class UnitTab(wx.ScrolledWindow):
         self.parent = parent
 
         self.ptr= {}
+
+        # Do these needs to be assigned here?
         self.ptr['children'] = []
         self.ptr['parent'] = []
 
@@ -101,7 +102,6 @@ class UnitTab(wx.ScrolledWindow):
             self.ptr['parent'] += prior
         else:
             self.ptr['parent'].append(self.parent)
-        #print("Parents {}".format(self.ptr['parent']))
 
         self.tab = {}
         self.tab['clvl'] = level
@@ -109,6 +109,7 @@ class UnitTab(wx.ScrolledWindow):
         self.tab['gear'] = ""
         self.tab['name'] = name
         self.tab['loads'] = []
+        self.ptr['children'] = []
 
     def getCtraits(self):
         domain = self.tab['domain']
@@ -252,7 +253,6 @@ class UnitTab(wx.ScrolledWindow):
         self.getCtraits()
 
         # Delete all tabs after the first
-        #print(self.book.GetPageCount())
         while self.ptr['parent'][0].GetPageCount() > 1:
             self.ptr['parent'][0].DeletePage(1)
         self.ptr['parent'][0].SendSizeEvent()
@@ -295,6 +295,9 @@ class UnitTab(wx.ScrolledWindow):
         traitGrid = wx.GridBagSizer(hgap=3, vgap=0)  # Place to store trait info
         row = 0
         # Do Base/Inherited, Class, then Gear
+
+
+
         for type in ['Prior', 'Class', 'Gear']:
             label = wx.StaticText(self, label="{} Traits".format(type), style=self.flags)
             label.SetFont(self.boldfont)
@@ -331,6 +334,17 @@ class UnitTab(wx.ScrolledWindow):
             row += 1
         traitGrid.AddGrowableCol(1)
         return(traitGrid)
+
+    def getTraitEffect(self, trait):
+        (name, type, cost, filter, prior) = trait.split('|')
+
+        if type == "Trait":
+            if name in TraitList:
+                return(name, TraitList[name].get("Display", ""))
+            else:
+                return("Increase ", "")
+        else:
+            return(name, "")
 
     def getPriorTraits(self):
         ret = []
@@ -424,10 +438,10 @@ class UnitTab(wx.ScrolledWindow):
             loadGrid = wx.GridBagSizer(hgap=3, vgap=0)  # Place to store trait info
             row = 0
             # print header
-            fields = ['Name', "Unit Size", "Selected Gear", "$$", "Total"]
+            fields = ['Name', "# Models", "Gear Selected", "$$", "Total"]
             col = 1
             for field in fields:
-                label = wx.StaticText(self, label=field, style=wx.ALIGN_CENTER)
+                label = wx.StaticText(self, label=field, style=wx.ALIGN_CENTER, size=(len(field)*11, -1))
                 label.SetFont(self.boldfont)
                 loadGrid.Add(label, pos=(row, col), flag=wx.EXPAND|wx.ALL|wx.ALIGN_CENTER)
                 col += 1
@@ -444,7 +458,7 @@ class UnitTab(wx.ScrolledWindow):
                 self.Bind(wx.EVT_BUTTON, lambda event, a="del", i=index: self.onUpdateLoad(event, a, i), delBtn)
                 loadGrid.Add(delBtn, pos=(row, 0), flag=self.flags, border=self.border)
                 # Name
-                nameLbl = wx.TextCtrl(self, size=(-1, -1), value=name)
+                nameLbl = wx.TextCtrl(self, size=(150, -1), value=name)
                 self.Bind(wx.EVT_TEXT, lambda event, a="name", i=index: self.onUpdateLoad(event, a, i), nameLbl)
                 loadGrid.Add(nameLbl, pos=(row, 1), flag=self.flags, border=self.border)
                 # Qty
@@ -467,7 +481,6 @@ class UnitTab(wx.ScrolledWindow):
             loadGrid.AddGrowableCol(3)
 
     def onUpdateLoad(self, event, action, index):
-        print("Before Array: {}".format(self.tab['loads']))
         if action == "new":
             load = "|0|Select Gear|0|0"
             self.tab['loads'].append(load)
@@ -483,7 +496,6 @@ class UnitTab(wx.ScrolledWindow):
             if action == "name":
                 # update name in array
                 self.tab['loads'][index] = "|".join( (event.GetString(),qty, gear, gcost, total))
-                print("Name")
             elif action == 'spin':
                 qty = str(event.GetPosition())
                 # Turn Gear into a list
@@ -498,7 +510,6 @@ class UnitTab(wx.ScrolledWindow):
                 if dia.ShowModal() == wx.ID_OK:
                     (gcost, total, display) = self.gearCalc(qty, dia.gear)
                     gearline = "|".join((name, qty, display, gcost, total))
-                    print("Gearline: {}".format(gearline))
                     self.tab['loads'][index] = gearline
                     dia.Destroy()
                 self.DrawTab()
@@ -515,15 +526,16 @@ class UnitTab(wx.ScrolledWindow):
                     count = 99999
                 data[name] = int(count)
         return(data)
-        print("Priors: {}".format(list))
 
     def gearCalc(self, qty, select_gear):
         display_list = []
         model_gear = 0
         unit_gear = 0
-        print("Calc Q: {} G: {}".format(qty,select_gear))
 
-        for item in select_gear.keys():
+        #gear_keys = select_gear.keys()
+        #gear_keys.sort()
+
+        for item in sorted(select_gear.keys()):
             if select_gear.get(item, 0) == 99999:
                 display_list.append("{} ${}".format(item, self.gopts[item]['Cost']))
                 if self.gopts[item]['Category'] == "Primitive":
@@ -557,7 +569,6 @@ class UnitTab(wx.ScrolledWindow):
         self.ptr['children'].append(new)
 
     def onDelTrait(self, event, trait):
-        #print("Delete {}".format(trait))
         # Every traits that makes it here should be in the format sel|action|pv|prune|parent
         if '|' in trait:
             (name, action, pv, filter, parent) = trait.split('|')
@@ -569,11 +580,9 @@ class UnitTab(wx.ScrolledWindow):
         self.DrawTab()
 
     def onSelTrait(self, event, trait):
-        #print("Adding {}".format(trait))
         (sel, action, pv, prune, prior) = trait.split('|')
 
         index = self.tab['ctraits'].index(trait)
-        print("Action {}".format(action))
 
         if action == "Pick":
 ### Bypass call if list only contains 1 value?
@@ -606,13 +615,11 @@ class UnitTab(wx.ScrolledWindow):
         self.DrawTab()
 
     def testTraitBranching(self, name, effect):
-        print("Testing Branching: {}".format(name))
         branchTraits = {
             "Species Variant ": "{} T2".format(TraitList[name]['Branch']) ,
             "Rare Traits ":  "",
             "Mercenary Class ": "Armory",
-            "Adaptive Science ": "Knowledge and Science",
-
+            "Adaptive Science ": "Knowledge and Science"
         }
 ### Fix Rare Traits
 
@@ -624,7 +631,6 @@ class UnitTab(wx.ScrolledWindow):
                  list = effect.split(" ")
                  count = int(list[2])
                  prune = branchTraits[key]
-                 print("Doing {} = C: {} P: {}".format(effect,count,prune))
         if " or " in  effect:
             count = 1
             prune = '; '.join(effect.split(' or '))
@@ -655,16 +661,13 @@ class UnitTab(wx.ScrolledWindow):
                 # Resolve trait effects
                 effects = TraitList[sel]['Display'].split('; ')
                 for effect in effects:
-                    #print("{}: {}".format(sel,effect))
                     if " or " in effect:
                         trash = 1 #(ignore)
                     elif effect.startswith("Increase "):
                         list = effect.split(" ")
-                        #print("Increasing {} {}".format(list[1],[list[2]]))
                         self.tab[list[1]] += int(list[2])
                     elif effect.startswith("Decrease "):
                         list = effect.split(" ")
-                        #print("Decreasing {} {}".format(list[1],[list[2]]))
                         self.tab[list[1]] -= int(list[2])
                     elif effect.startswith("Armory: "):
                         list = effect.split(": ")

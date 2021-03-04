@@ -18,12 +18,12 @@ class selGearDiag(wx.Dialog):
         okBtn.SetForegroundColour((255, 255, 255))
         self.Bind(wx.EVT_BUTTON, self.onOK, okBtn)
         gearGrid.Add(okBtn, pos=(0, 0), span=(1,5), flag=wx.EXPAND)
-        fields = ["Pick Amount", "Unit", "Name", "Notes", "Cost"]
+        fields = ["Pick Amount", "Unit", "Name", "Cost", "Notes"]
         col = 0
         for field in fields:
             label = wx.StaticText(self.p, label=field, style=wx.ALIGN_CENTER)
             label.SetFont(wx.Font(-1, wx.DEFAULT, wx.NORMAL, wx.BOLD))
-            gearGrid.Add(label, pos=(1, col), flag=wx.ALIGN_CENTER)
+            gearGrid.Add(label, pos=(1, col), flag=wx.ALIGN_CENTER|wx.EXPAND)
             col += 1
         row = 2
         (x, y) = label.GetSize()
@@ -52,7 +52,7 @@ class selGearDiag(wx.Dialog):
             if not (row % 2):
                 selWid.SetBackgroundColour((100, 100, 100))
                 selWid.SetForegroundColour((255, 255, 255))
-            gearGrid.Add(selWid, pos=(row, col), flag=wx.EXPAND|wx.ALL|wx.ALIGN_CENTER)
+            gearGrid.Add(selWid, pos=(row, col), flag=wx.ALL|wx.ALIGN_CENTER)
 
             # Name
             col += 1
@@ -62,6 +62,14 @@ class selGearDiag(wx.Dialog):
                label.SetForegroundColour((255, 255, 255))
             gearGrid.Add(label, pos=(row, col), flag= wx.ALIGN_CENTER_VERTICAL|wx.EXPAND|wx.ALL)
 
+            # Cost
+            col += 1
+            label = wx.StaticText(self.p, label=list[key]['Cost'], style=wx.ALIGN_CENTER)
+            if not (row % 2):
+                label.SetBackgroundColour((100, 100, 100))
+                label.SetForegroundColour((255, 255, 255))
+            gearGrid.Add(label, pos=(row, col), flag=wx.ALIGN_CENTER_VERTICAL | wx.EXPAND | wx.ALL)
+
             # Notes
             col += 1
             label = wx.StaticText(self.p, label=list[key]['Notes'])
@@ -70,13 +78,7 @@ class selGearDiag(wx.Dialog):
                 label.SetForegroundColour((255, 255, 255))
             gearGrid.Add(label, pos=(row, col), flag= wx.ALIGN_CENTER_VERTICAL|wx.EXPAND|wx.ALL)
 
-            # Cost
-            col += 1
-            label = wx.StaticText(self.p, label=list[key]['Cost'], style=wx.ALIGN_CENTER)
-            if not (row % 2):
-                label.SetBackgroundColour((100, 100, 100))
-                label.SetForegroundColour((255, 255, 255))
-            gearGrid.Add(label, pos=(row, col), flag=wx.ALIGN_CENTER_VERTICAL|wx.EXPAND|wx.ALL)
+
 
             row += 1
         gearGrid.AddGrowableCol(3)
