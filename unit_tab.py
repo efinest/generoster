@@ -342,7 +342,7 @@ class UnitTab(wx.ScrolledWindow):
             traitGrid.Add(widget, pos=(row, 1), flag=self.flags, border=self.border)
             if item.startswith('|'):
                 self.Bind(wx.EVT_BUTTON, lambda event, t=item: self.onSelTrait(event, t), widget)
-            elif type == "Class":
+            else:
                 if "|Trait|" in item or '|Pick|' in item:
                     delbtn = wx.Button(self, -1, "x", size=(36, -1))
                     self.Bind(wx.EVT_BUTTON, lambda event, t=item: self.onDelTrait(event, t), delbtn)
