@@ -35,7 +35,7 @@ class selGearDiag(wx.Dialog):
             col = 0
             if not list[key]['Category']  == "Primitive":
                 selWid = wx.SpinCtrl(self, -1, "0", min=0, max=100, size=(-1, -1))
-                if key in prior_gear.keys():  selWid.SetValue(prior_gear[key])
+                if key in prior_gear.keys() and prior_gear[key] < 100:  selWid.SetValue(prior_gear[key])
                 self.Bind(wx.EVT_SPINCTRL, lambda event, k=key: self.onCheck(event, k), selWid)
                 if not (row % 2):
                     selWid.SetBackgroundColour((100, 100, 100))

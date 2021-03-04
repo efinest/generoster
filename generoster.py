@@ -4,6 +4,7 @@ import wx.lib.agw
 import wx.lib.agw.labelbook as LB
 from wx.lib.agw.fmresources import *
 from unit_tab import UnitTab
+import xlsxwriter
 
 class GeneRoster(wx.Frame):
     def __init__(self):
@@ -44,6 +45,8 @@ class GeneRoster(wx.Frame):
         optsMenu = wx.Menu()
         optsShow = optsMenu.Append(-1, "Display", "Configure Default Display")
         optsPath = optsMenu.Append(-1, "Path", "Configure Default Paths")
+        optsXLSX = optsMenu.Append(-1, "Export Loadouts", "Export Loadouts to spreadsheet")
+        self.Bind(wx.EVT_MENU, self.onOutput, optsXLSX)
         menuBar.Append(optsMenu, "&Settings")
         self.SetMenuBar(menuBar)  # Attach menubar to frame
 
@@ -131,6 +134,76 @@ class GeneRoster(wx.Frame):
                 print(pickle.dumps(sav))
                 file.write(pickle.dumps(sav))  # use `pickle.loads` to do the reverse
             file.close()
+
+    #########################################
+    def onOutput(self, event):
+        self.tabArray = []
+        self.listTabs(self.base)
+
+        Stats = ["Strength", "Toughness", "Movement", "Martial", "Ranged", "Defense",
+                 "Discipline", "Willpower", "Command", "MTN", "RTN", "MORALE", "Wounds", "Attacks", "Size"]
+
+        workbook = xlsxwriter.Workbook('loadouts.xlsx')
+        worksheet = workbook.add_worksheet("Loadouts")
+        h1 = workbook.add_format()
+        h1.set_font_size(10)
+        h1.set_bold()
+        h1.set_underline()
+        h1.set_align("center")
+        h1.set_border(1)
+
+        t1 = workbook.add_format()
+        t1.set_font_size(10)
+        t1.set_border(1)
+        t1.set_align("vcenter")
+        t1.set_text_wrap()
+
+        t2 = workbook.add_format()
+        t2.set_font_size(10)
+        t2.set_align("center")
+        t2.set_align("vcenter")
+        t2.set_border(1)
+
+        header = ["Qty", "Name", "Description", "Cost", "Total"]
+        row = 0
+        col = 0
+        for name in header:
+            worksheet.write(row, col, name, h1)
+            col += 1
+        row += 1
+
+        for t in self.tabArray:
+            print("T {}".format(t.tab))
+            for unit in t.tab['loads']:
+                (name, qty, gear, gcost, cost) = unit.split('|')
+                # Needs level and traits
+                # sarge upgrade option
+                desc = "Models: {}; Gear: {}".format(qty, gear)
+                worksheet.write(row, 0, 0, t2)        # qty of this taken
+                worksheet.write(row, 1, name, h1)     # name + ???
+                worksheet.merge_range(row+1, 1, row+4, 1, "", t1)
+                worksheet.merge_range(row, 2, row+4, 2, desc, t1) # description
+                worksheet.write(row, 3, cost, t2)     # cost
+                worksheet.write_formula(row, 4, "={}{} * {}{}".format("A", row+1, "D", row+1), t2) # row total
+                # write out trait summary
+                col = 5
+                for stat in Stats:
+                    worksheet.write(row, col, stat, t1)
+                    worksheet.write(row, col+1, t.tab[stat], t2)
+                    col += 2
+                    if (col > 9):
+                        col = 5
+                        row += 1
+                row += 1
+
+        worksheet.merge_range(row, 0, row, 3, "Army Total", h1)
+        worksheet.write_formula(row, 4, "=sum(E2:E{})".format(row-1), h1)
+
+        width = [ 3, 14, 40, 4, 4, 8, 3, 8, 3, 8, 3]
+        for count in range(len(width)):
+            worksheet.set_column(count,count, width[count])
+
+        workbook.close()
 
     #########################################
     def onExit(self, event):
